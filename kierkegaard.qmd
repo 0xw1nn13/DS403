@@ -1,0 +1,93 @@
+---
+title: "code"
+format: html
+editor: visual
+---
+
+## loading packages and text
+
+```{r}
+# install.packages("tm")
+# install.packages("SnowballC")
+# install.packages("wordcloud")
+# install.packages("ggplot2")
+
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(ggplot2)
+library(stringr)
+
+
+
+EitherOr <- readLines("./EitherOr.txt")
+FearAndTrembling <- readLines("./FearAndTrembling.txt")
+InVinoVeritas <- readLines("./InVinoVeritas.txt")
+Kierkegaard <- readLines("./Kierkegaard_original.txt")
+PreperationForAChristianLife <- readLines("./PreperationForAChristianLife.txt")
+ThePresentMoment <- readLines("./ThePresentMoment.txt")
+```
+
+```{r}
+corpus <- Corpus(VectorSource(Kierkegaard))
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, stripWhitespace)
+tdm <- TermDocumentMatrix(corpus)
+freq <- rowSums(as.matrix(tdm))
+wordcloud(names(freq), freq, min.freq = 30)
+
+
+```
+
+```{r}
+# Calculate word frequencies
+freq <- rowSums(as.matrix(tdm))
+
+# Filter frequencies >= 10
+filtered_freq <- freq[freq >= 40]
+
+# Generate word cloud with filtered frequencies
+wordcloud(names(filtered_freq), filtered_freq)
+```
+
+```{r}
+
+
+
+pdf("term_frequencies_wordcloud.pdf", width = 8, height = 6)
+wordcloud(names(filtered_freq), filtered_freq, 
+           random.order = FALSE,
+           colors = brewer.pal(8, "Dark2"), 
+           main = "Term Frequencies")
+dev.off()
+```
+
+```{r}
+filtered_freq <- freq[freq >= 90]
+
+ggplot(data.frame(terms = names(filtered_freq), frequency = filtered_freq), 
+       aes(x = reorder(terms, frequency), y = frequency)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip()
+```
+
+```{r}
+p <- ggplot(data.frame(terms = names(filtered_freq), frequency = filtered_freq), 
+       aes(x = reorder(terms, frequency), y = frequency)) + 
+  geom_bar(stat = "identity", fill = "#69b3a2", color = "black") + 
+  coord_flip() + 
+  labs(title = "Word Frequencies", 
+       x = "", 
+       y = "Frequency") + 
+  theme_classic() + 
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"), 
+        plot.subtitle = element_text(hjust = 0.5, size = 14, color = "gray"), 
+        axis.text.y = element_text(size = 7), 
+        axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
+
+ggsave("word_frequencies.png", plot = p, width = 8, height = 6, dpi = 300)
+
+```
